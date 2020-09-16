@@ -48,6 +48,7 @@ class TestwowDB():
             assert WowDB(locale, region, realm, client_id, client_secret) is not None
 
     def test_getAuctions(self):
+        '''Test getting auction house results'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         data = wow.findAuctions()
         assert 'auctions' in data.keys()
