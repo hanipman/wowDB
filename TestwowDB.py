@@ -5,8 +5,8 @@ from wowapi.exceptions import *
 locale = 'en_US'
 region = 'us'
 realm = 'Area 52'
-client_id = ''
-client_secret = ''
+client_id = '4a85a96821f44ed483c41628ebf656f1'
+client_secret = 'KHATRWXtHV2pIxK5jBbjV6tSyI87oycN'
 
 class TestwowDB():
 
@@ -18,7 +18,7 @@ class TestwowDB():
         assert wow.getRealm() == realm
         assert wow.getRealmSlug() == 'area-52'
         assert wow.getConnectedRealmID() == 3676
-
+    
     @pytest.mark.parametrize(
         "locale,region,realm,client_id,client_secret,expected", 
         [
@@ -47,8 +47,25 @@ class TestwowDB():
         with expected:
             assert WowDB(locale, region, realm, client_id, client_secret) is not None
 
-    def test_getAuctions(self):
+    def test_findAuctions(self):
         '''Test getting auction house results'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         data = wow.findAuctions()
-        assert 'auctions' in data.keys()
+        assert 'id' in data[0].keys()
+
+    def test_sortListings(self):
+        '''Test sorting auction house results'''
+        wow = WowDB(locale, region, realm, client_id, client_secret)
+        data = wow.findAuctions()
+        sorted_list = wow.sortListings(data)
+        assert all (k in sorted_list[0] for k in (
+            'item_id',
+            'quantity',
+            'avg_unit_price',
+            'high_price',
+            'low_price',
+            'num'
+        ))
+        for i in range(5):
+            assert sorted_list[i]['item_id'] < sorted_list[i+1]['item_id']
+        

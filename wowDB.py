@@ -58,7 +58,7 @@ class WowDB:
     '''
     Finds the realm ID of the given realm name. Sets realm_id.
 
-    @throws WowApiException Thrown if query returns 404
+    @throws WowApiException Thrown if query returns 400
     @throws Exception Thrown when any other exception is caught
     '''
     def __findRealmID(self):
@@ -78,7 +78,7 @@ class WowDB:
     '''
     Finds the realm slug of the given realm name. Sets realm_slug.
 
-    @throws WowApiException Thrown if query returns 404
+    @throws WowApiException Thrown if query returns 400
     @throws Exception Thrown when any other exception is caught
     '''
     def __findRealmSlug(self):
@@ -102,7 +102,7 @@ class WowDB:
 
     @param realm_slug Initalized to None if no argument passed.
 
-    @throws WowApiException Thrown if query returns 404
+    @throws WowApiException Thrown if query returns 400
     @throws Exception Thrown when any other exception is caught
     '''
     def __findConnectedRealm(self, realm_slug=None):
@@ -131,7 +131,7 @@ class WowDB:
 
     @return data Details of auction house listings to be evaluated
 
-    @throws WowApiException Thrown if query returns 404
+    @throws WowApiException Thrown if query returns 400
     @throws Exception Thrown when any other exception is caught
     '''
     def findAuctions(self, connected_realm_id=None):
@@ -140,6 +140,7 @@ class WowDB:
             if connected_realm_id == None:
                 self.__findConnectedRealm()
             data = self.api.get_auctions(region=self.region, namespace='dynamic-us', locale=self.locale, connected_realm_id=self.connected_realm_id)
+            data = data['auctions']
             return data
         except WowApiException as e:
             print(e.args)
@@ -148,6 +149,62 @@ class WowDB:
             print(e.args)
             raise e
     
+    '''
+    Parses relevant data from auction house listing data and calculates
+    the average, high, and low price for each item. The list is sorted
+    by item_id.
+    
+    @param data Auction house listing data
+
+    @return item json format:
+    {
+        'item_id': int,
+        'quantity': int,
+        'avg_unit_price': int,
+        'high_price': int,
+        'low_price': int
+        'num': int
+    }
+    '''
+    def sortListings(self, data):
+        sorted_list = list()
+        for listing in data:
+            # check if listing already exists in sorted_list
+            res = next((sub for sub in sorted_list if sub['item_id'] == listing['item']['id']), None)
+            
+            # check if a unit price or buyout price exists
+            # ignore bid only listings
+            if 'unit_price' in listing.keys():
+                price = listing['unit_price']
+            elif 'buyout' in listing.keys():
+                price = listing['buyout']
+            else:
+                price = -1
+
+            if price >= 0:
+                # if item not in sorted_list, append new dict
+                if res is None:
+                    item = {
+                        'item_id': listing['item']['id'],
+                        'quantity': listing['quantity'],
+                        'avg_unit_price': price,
+                        'high_price': price,
+                        'low_price': price,
+                        'num': 1
+                    }
+                    sorted_list.append(item)
+                # if item is in sorted_list, update statistics
+                else:
+                    res['quantity'] = res['quantity'] + listing['quantity']
+                    res['avg_unit_price'] = ((res['avg_unit_price'] * res['num']) + price)/(res['num'] + 1)
+                    if res['high_price'] < price:
+                        res['high_price'] = price
+                    if res['low_price'] > price:
+                        res['low_price'] = price
+                    res['num'] = res['num'] + 1
+        sorted_list = sorted(sorted_list, key = lambda i: i['item_id'])
+        return sorted_list
+
     '''
     Gets attribute locale.
 
@@ -197,8 +254,15 @@ class WowDB:
         return self.connected_realm_id
 
 def main():
-    wow = WowDB()
-    pprint(wow.getAuctions())
+    wow = WowDB(locale='en_US',region='us',realm='Area 52',
+        client_id='4a85a96821f44ed483c41628ebf656f1',
+        client_secret='KHATRWXtHV2pIxK5jBbjV6tSyI87oycN')
+    data = wow.findAuctions()
+    sorted_list = wow.sortListings(data)
+    with open('output.txt', 'w') as file:
+        pprint(data, file)
+    with open('sorted.txt', 'w') as file2:
+        pprint(sorted_list, file2)
 
 if __name__ == "__main__":
     main()
