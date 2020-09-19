@@ -168,12 +168,19 @@ class WowDB:
     '''
     def sortListings(self, data):
         sorted_list = list()
+        data = sorted(data, key = lambda i: i['item']['id'])
+        item_dict = {
+            'item_id': 0,
+            'quantity': 0,
+            'avg_unit_price': 0,
+            'high_price': 0,
+            'low_price': 0,
+            'num': 0
+        }
+        previous_id = 0
         for listing in data:
-            # check if listing already exists in sorted_list
-            res = next((sub for sub in sorted_list if sub['item_id'] == listing['item']['id']), None)
-            
-            # check if a unit price or buyout price exists
-            # ignore bid only listings
+            price = 0
+            # update price if listing is by unit or buyout. Ignore bids
             if 'unit_price' in listing.keys():
                 price = listing['unit_price']
             elif 'buyout' in listing.keys():
@@ -182,27 +189,31 @@ class WowDB:
                 price = -1
 
             if price >= 0:
-                # if item not in sorted_list, append new dict
-                if res is None:
-                    item = {
-                        'item_id': listing['item']['id'],
-                        'quantity': listing['quantity'],
-                        'avg_unit_price': price,
-                        'high_price': price,
-                        'low_price': price,
-                        'num': 1
-                    }
-                    sorted_list.append(item)
-                # if item is in sorted_list, update statistics
+                # if listing is the same item as previous listing
+                # update item dict
+                if listing['item']['id'] == previous_id:
+                    item['quantity'] = item['quantity'] + listing['quantity']
+                    item['avg_unit_price'] = ((item['avg_unit_price'] * item['num']) + price)/(item['num'] + 1)
+                    item['num'] = item['num'] + 1
+                    if item['high_price'] < price:
+                        item['high_price'] = price
+                    if item['low_price'] > price:
+                        item['low_price'] = price
+                # if listing is a different item, add previous item 
+                # to list and setup new item
                 else:
-                    res['quantity'] = res['quantity'] + listing['quantity']
-                    res['avg_unit_price'] = ((res['avg_unit_price'] * res['num']) + price)/(res['num'] + 1)
-                    if res['high_price'] < price:
-                        res['high_price'] = price
-                    if res['low_price'] > price:
-                        res['low_price'] = price
-                    res['num'] = res['num'] + 1
-        sorted_list = sorted(sorted_list, key = lambda i: i['item_id'])
+                    # init case
+                    if previous_id != 0:
+                        sorted_list.append(item)
+                    item = dict(item_dict)
+                    item['item_id'] = listing['item']['id']
+                    item['quantity'] = listing['quantity']
+                    item['avg_unit_price'] = price
+                    item['high_price'] = price
+                    item['low_price'] = price
+                    item['num'] = 1
+            # update previous listing id
+            previous_id = listing['item']['id']
         return sorted_list
 
     '''
@@ -256,7 +267,7 @@ class WowDB:
 def main():
     wow = WowDB(locale='en_US',region='us',realm='Area 52',
         client_id='4a85a96821f44ed483c41628ebf656f1',
-        client_secret='KHATRWXtHV2pIxK5jBbjV6tSyI87oycN')
+        client_secret='fAV6cNFgoz7dM38KP6N8OFt0ZzblxoW6')
     data = wow.findAuctions()
     sorted_list = wow.sortListings(data)
     with open('output.txt', 'w') as file:

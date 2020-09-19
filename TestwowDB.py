@@ -5,8 +5,8 @@ from wowapi.exceptions import *
 locale = 'en_US'
 region = 'us'
 realm = 'Area 52'
-client_id = '4a85a96821f44ed483c41628ebf656f1'
-client_secret = 'KHATRWXtHV2pIxK5jBbjV6tSyI87oycN'
+client_id = ''
+client_secret = ''
 
 class TestwowDB():
 
@@ -66,6 +66,6 @@ class TestwowDB():
             'low_price',
             'num'
         ))
-        for i in range(5):
+        for i in range(len(sorted_list) - 1):
             assert sorted_list[i]['item_id'] < sorted_list[i+1]['item_id']
         
