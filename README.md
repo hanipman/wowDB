@@ -1,6 +1,6 @@
 # wowDB
 
-Python script that fills PostgreSQL database with historical price data from World of Warcraft API. Data is then visualized using Java GUI application from my other repository. Script will be setup as a daemon, current compatibility through Windows planned.
+Python script that fills PostgreSQL database with historical price data from World of Warcraft API. Data is then visualized using Java GUI application from my other repository. Currently only tested with Windows.
 
 ### Dependencies:
 ```
@@ -9,8 +9,10 @@ psycopg2
 pytest
 ```
 
-### TODO:
-- Store data in 30 minute intervals using daemon.
+### Setup:
+1. Install and start Postgresql server
+2. Create a database named as indicated in settings.ini
+3. For Windows, use Windows Task Scheduler to implement a periodic task with the desired time interval.
 
 ### Stats to track:
 - rolling average
