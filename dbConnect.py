@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2 import sql
 from configparser import ConfigParser
 
 '''
@@ -32,16 +33,18 @@ class dbConnect():
     def __init__(self):
         self.conn = None
 
+    def __del__(self):
+        self.conn.close()
+
     '''
     Connect to database using details within settings.ini
     
     @throws DatabaseError Thrown if connection fails
     @throws Exception Thrown when any other exception is caught
     '''
-    def connect(self):
+    def connect(self, host, database, user, password):
         try:
-            params = config()
-            self.conn = psycopg2.connect(**params)
+            self.conn = psycopg2.connect(host=host, dbname=database, user=user, password=password)
         except (Exception, psycopg2.DatabaseError) as e:
             print(e.args)
             raise e
@@ -56,33 +59,35 @@ class dbConnect():
     @throws DatabaseError Thrown if error in statement
     @throws Exception Thrown when any other exception is caught
     '''
-    def __checkTableExists(self, realm_slug):
+    def checkTableExists(self, realm_slug):
         try:
-            self.realm = realm_slug
+            self.realm = realm_slug.replace('-','_')
             cur = self.conn.cursor()
-            if cur.execute(
-                '''
+            cur.execute(
+                """
                 SELECT EXISTS (
                     SELECT *
                     FROM information_schema.tables
                     WHERE
-                        table_schema = 'public' AND
-                        table_name = '%s'
+                        table_name = %s
                 )
-                ''', realm_slug
-            ) == False:
+                """,(self.realm,)
+            )
+            if not cur.fetchone()[0]:
                 cur.execute(
-                    '''
-                    CREATE TABLE '%s' (
+                    """
+                    CREATE TABLE %s (
                         interval TIMESTAMP NOT NULL,
                         item_id INTEGER NOT NULL,
                         quantity INTEGER NOT NULL,
-                        avg_unit_price INTEGER NOT NULL,
-                        high_price INTEGER NOT NULL,
-                        low_price INTEGER NOT NULL
+                        avg_unit_price BIGINT NOT NULL,
+                        high_price BIGINT NOT NULL,
+                        low_price BIGINT NOT NULL
                     )
-                    ''', realm_slug
+                    """ % self.realm
                 )
+                self.conn.commit()
+            cur.close()
         except (Exception, psycopg2.DatabaseError) as e:
             print(e.args)
             raise e
@@ -98,24 +103,30 @@ class dbConnect():
     def addItem(self, item):
         try:
             cur = self.conn.cursor()
-            cur.execute(
-                '''
-                INSERT INTO %s ()
-                    current_timestamp,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                ''', (
-                        self.realm,
+            cur.execute(sql.SQL(
+                """
+                INSERT INTO {} (interval,
+                                item_id,
+                                quantity,
+                                avg_unit_price,
+                                high_price,
+                                low_price)
+                    VALUES (current_timestamp,
+                            %s,
+                            %s,
+                            %s,
+                            %s,
+                            %s)
+                """).format(sql.Identifier(self.realm)), [
                         item['item_id'],
                         item['quantity'],
                         item['avg_unit_price'],
                         item['high_price'],
                         item['low_price']
-                    )
+                    ]
             )
+            self.conn.commit()
+            cur.close()
         except (Exception, psycopg2.DatabaseError) as e:
             print(e.args)
             raise e

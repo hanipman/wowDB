@@ -1,5 +1,4 @@
 
-from pprint import pprint
 from wowapi import WowApi
 from wowapi.exceptions import *
 import re
@@ -26,10 +25,7 @@ class WowDB:
         if client_id or client_secret:
             try:
                 self.api = WowApi(client_id, client_secret)
-            except WowApiOauthException as e:
-                print(e.args)
-                raise e
-            except Exception as e:
+            except (Exception, WowApiOauthException) as e:
                 print(e.args)
                 raise e
         else:
@@ -48,10 +44,7 @@ class WowDB:
             raise ValueError('locale, region, and/or realm empty.')
         try:
             self.__findConnectedRealm()
-        except WowApiOauthException as e:
-            print(e.args)
-            raise e
-        except Exception as e:
+        except (Exception, WowApiOauthException) as e:
             print(e.args)
             raise e
 
@@ -68,11 +61,8 @@ class WowDB:
             for x in data['realms']:
                 if x['name'] == self.realm:
                     self.realm_id = x['id']
-        except WowApiException as e:
+        except (Exception, WowApiException) as e:
             print(e.arts)
-            raise e
-        except Exception as e:
-            print(e.args)
             raise e
     
     '''
@@ -88,10 +78,7 @@ class WowDB:
             for x in data['realms']:
                 if x['name'] == self.realm:
                     self.realm_slug = x['slug']
-        except WowApiException as e:
-            print(e.args)
-            raise e
-        except Exception as e:
+        except (Exception, WowApiException) as e:
             print(e.args)
             raise e
     
@@ -114,10 +101,7 @@ class WowDB:
             data = data['connected_realm']['href']
             data = re.search(r'\d+', data).group()
             self.connected_realm_id = int(data)
-        except WowApiException as e:
-            print(e.args)
-            raise e
-        except Exception as e:
+        except (Exception, WowApiException) as e:
             print(e.args)
             raise e
 
@@ -142,10 +126,7 @@ class WowDB:
             data = self.api.get_auctions(region=self.region, namespace='dynamic-us', locale=self.locale, connected_realm_id=self.connected_realm_id)
             data = data['auctions']
             return data
-        except WowApiException as e:
-            print(e.args)
-            raise e
-        except Exception as e:
+        except (Exception, WowApiException) as e:
             print(e.args)
             raise e
     
@@ -178,6 +159,7 @@ class WowDB:
             'num': 0
         }
         previous_id = 0
+        item = None
         for listing in data:
             price = 0
             # update price if listing is by unit or buyout. Ignore bids
@@ -204,6 +186,7 @@ class WowDB:
                 else:
                     # init case
                     if previous_id != 0:
+                        item['avg_unit_price'] = int(round(item['avg_unit_price']))
                         sorted_list.append(item)
                     item = dict(item_dict)
                     item['item_id'] = listing['item']['id']
@@ -263,17 +246,3 @@ class WowDB:
     '''
     def getConnectedRealmID(self):
         return self.connected_realm_id
-
-def main():
-    wow = WowDB(locale='en_US',region='us',realm='Area 52',
-        client_id='4a85a96821f44ed483c41628ebf656f1',
-        client_secret='fAV6cNFgoz7dM38KP6N8OFt0ZzblxoW6')
-    data = wow.findAuctions()
-    sorted_list = wow.sortListings(data)
-    with open('output.txt', 'w') as file:
-        pprint(data, file)
-    with open('sorted.txt', 'w') as file2:
-        pprint(sorted_list, file2)
-
-if __name__ == "__main__":
-    main()
