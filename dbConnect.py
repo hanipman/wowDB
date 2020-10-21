@@ -81,6 +81,7 @@ class dbConnect():
                         item_id INTEGER NOT NULL,
                         quantity INTEGER NOT NULL,
                         avg_unit_price BIGINT NOT NULL,
+                        std_dev BIGINT NOT NULL,
                         high_price BIGINT NOT NULL,
                         low_price BIGINT NOT NULL
                     )
@@ -109,9 +110,11 @@ class dbConnect():
                                 item_id,
                                 quantity,
                                 avg_unit_price,
+                                std_dev,
                                 high_price,
                                 low_price)
                     VALUES (current_timestamp,
+                            %s,
                             %s,
                             %s,
                             %s,
@@ -121,6 +124,7 @@ class dbConnect():
                         item['item_id'],
                         item['quantity'],
                         item['avg_unit_price'],
+                        item['std_dev'],
                         item['high_price'],
                         item['low_price']
                     ]
