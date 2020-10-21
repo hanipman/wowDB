@@ -5,19 +5,19 @@ from wowapi.exceptions import *
 locale = 'en_US'
 region = 'us'
 realm = 'Area 52'
-client_id = ''
-client_secret = ''
+client_id = '4a85a96821f44ed483c41628ebf656f1'
+client_secret = 'fAV6cNFgoz7dM38KP6N8OFt0ZzblxoW6'
 
 class TestwowDB():
 
     def test_init(self):
         '''Test init constructor with existing inputs'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
-        assert wow.getLocale() == locale
-        assert wow.getRegion() == region
-        assert wow.getRealm() == realm
-        assert wow.getRealmSlug() == 'area-52'
-        assert wow.getConnectedRealmID() == 3676
+        assert wow.locale == locale
+        assert wow.region == region
+        assert wow.realm == realm
+        assert wow.realm_slug == 'area-52'
+        assert wow.connected_realm_id == 3676
     
     @pytest.mark.parametrize(
         "locale,region,realm,client_id,client_secret,expected", 
@@ -62,6 +62,7 @@ class TestwowDB():
             'item_id',
             'quantity',
             'avg_unit_price',
+            'std_dev',
             'high_price',
             'low_price',
             'num'
