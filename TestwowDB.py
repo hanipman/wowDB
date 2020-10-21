@@ -5,8 +5,8 @@ from wowapi.exceptions import *
 locale = 'en_US'
 region = 'us'
 realm = 'Area 52'
-client_id = '4a85a96821f44ed483c41628ebf656f1'
-client_secret = 'fAV6cNFgoz7dM38KP6N8OFt0ZzblxoW6'
+client_id = ''
+client_secret = ''
 
 class TestwowDB():
 

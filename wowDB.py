@@ -8,27 +8,27 @@ import queue as queue
 import re
 from welford import Welford
 
-'''
-Class WowDB contains server data and client credentials for the
-Battle.net API. Contains attributes locale, region, realm,
-realm_id, realm_slug, connected_realm_id, client_id, client_secret.
-'''
 class WowDB:
     '''
-    Constructor, initializes main server attributes and stores
-    client credentials for Battle.net API.
-
-    @param locale, region, realm Main server details
-    @param client_id, client_secret client authentication details
-
-    @throws WowApiOauthException    Thrown if client_id or client_secret is
-                                    invalid
-    @throws ValueError              Thrown if locale, region, realm,
-                                    client_id, or client_secret is empty
-    @throws Exception               Thrown when any other exception is
-                                    caught
+    Class WowDB contains server data and client credentials for the
+    Battle.net API. Contains attributes locale, region, realm,
+    realm_id, realm_slug, connected_realm_id, client_id, client_secret.
     '''
     def __init__(self, locale, region, realm, client_id, client_secret):
+        '''
+        Constructor, initializes main server attributes and stores
+        client credentials for Battle.net API.
+
+        @param locale, region, realm Main server details
+        @param client_id, client_secret client authentication details
+
+        @throws WowApiOauthException    Thrown if client_id or client_secret is
+                                        invalid
+        @throws ValueError              Thrown if locale, region, realm,
+                                        client_id, or client_secret is empty
+        @throws Exception               Thrown when any other exception is
+                                        caught
+        '''
         if client_id or client_secret:
             try:
                 self.api = WowApi(client_id, client_secret)
@@ -55,13 +55,13 @@ class WowDB:
             print(e.args)
             raise e
 
-    '''
-    Finds the realm ID of the given realm name. Sets realm_id.
-
-    @throws WowApiException Thrown if query returns 400
-    @throws Exception       Thrown when any other exception is caught
-    '''
     def __findRealmID(self):
+        '''
+        Finds the realm ID of the given realm name. Sets realm_id.
+
+        @throws WowApiException Thrown if query returns 400
+        @throws Exception       Thrown when any other exception is caught
+        '''
         self.realm_id = None
         try:
             data = self.api.get_realm_index(region=self.region, namespace='dynamic-us', locale=self.locale)
@@ -72,13 +72,13 @@ class WowDB:
             print(e.arts)
             raise e
     
-    '''
-    Finds the realm slug of the given realm name. Sets realm_slug.
-
-    @throws WowApiException Thrown if query returns 400
-    @throws Exception       Thrown when any other exception is caught
-    '''
     def __findRealmSlug(self):
+        '''
+        Finds the realm slug of the given realm name. Sets realm_slug.
+
+        @throws WowApiException Thrown if query returns 400
+        @throws Exception       Thrown when any other exception is caught
+        '''
         self.realm_slug = None
         try:
             data = self.api.get_realm_index(region=self.region, namespace='dynamic-us', locale=self.locale)
@@ -88,18 +88,18 @@ class WowDB:
         except (Exception, WowApiException) as e:
             print(e.args)
             raise e
-    
-    '''
-    Finds the connected realm id of the given realm slug. If no
-    argument is passed, __findRealmSlug() is used to initialize
-    attribute realm_slug. Sets connected_realm_id.
 
-    @param  realm_slug       Initalized to None if no argument passed.
-
-    @throws WowApiException Thrown if query returns 400
-    @throws Exception       Thrown when any other exception is caught
-    '''
     def __findConnectedRealm(self, realm_slug=None):
+        '''
+        Finds the connected realm id of the given realm slug. If no
+        argument is passed, __findRealmSlug() is used to initialize
+        attribute realm_slug. Sets connected_realm_id.
+
+        @param  realm_slug       Initalized to None if no argument passed.
+
+        @throws WowApiException Thrown if query returns 400
+        @throws Exception       Thrown when any other exception is caught
+        '''
         self.connected_realm_id = None
         try:
             if realm_slug == None:
@@ -112,20 +112,20 @@ class WowDB:
             print(e.args)
             raise e
 
-    '''
-    Finds the auction listings of the given connected realm. If
-    no argument is passed, __findConnectedRealm is used to
-    initialize connected_realm_id.
-
-    @param  connected_realm_id  Initialized to None if no argument passed
-
-    @return data                Details of auction house listings to be
-                                evaluated
-
-    @throws WowApiException     Thrown if query returns 400
-    @throws Exception           Thrown when any other exception is caught
-    '''
     def findAuctions(self, connected_realm_id=None):
+        '''
+        Finds the auction listings of the given connected realm. If
+        no argument is passed, __findConnectedRealm is used to
+        initialize connected_realm_id.
+
+        @param  connected_realm_id  Initialized to None if no argument passed
+
+        @return data                Details of auction house listings to be
+                                    evaluated
+
+        @throws WowApiException     Thrown if query returns 400
+        @throws Exception           Thrown when any other exception is caught
+        '''
         data = None
         try:
             if connected_realm_id == None:
@@ -137,25 +137,25 @@ class WowDB:
             print(e.args)
             raise e
 
-    '''
-    Parses relevant data from auction house listing data and calculates
-    the average, standard deviation, high, and low price for each item.
-    The list is sorted by item_id.
-    
-    @param data Auction house listing data
-
-    @return sorted_list List of items using json format:
-    {
-        'item_id': int,
-        'quantity': int,
-        'avg_unit_price': int,
-        'std_dev': int,
-        'high_price': int,
-        'low_price': int
-        'num': int
-    }
-    '''
     def sortListings(self, data):
+        '''
+        Parses relevant data from auction house listing data and calculates
+        the average, standard deviation, high, and low price for each item.
+        The list is sorted by item_id.
+        
+        @param data Auction house listing data
+
+        @return sorted_list List of items using json format:
+        {
+            'item_id': int,
+            'quantity': int,
+            'avg_unit_price': int,
+            'std_dev': int,
+            'high_price': int,
+            'low_price': int
+            'num': int
+        }
+        '''
         sorted_list = list()
         price_list = list()
         prev_id = 0
@@ -206,10 +206,8 @@ class WowDB:
                             foo(price_list)
                             foo
                             item['std_dev'] = math.floor(foo.std)
-                            # item['std_dev'] = int(round(self.__calcStdDev(item['avg_unit_price'], num_list, item['quantity'])))
                         except ValueError as e:
                             item['std_dev'] = 0
-                        # item['avg_unit_price'] = int(round(item['avg_unit_price']))
                         item['avg_unit_price'] = math.floor(foo.mean)
                         sorted_list.append(item)
                     item = dict(item_dict)
@@ -223,21 +221,21 @@ class WowDB:
             prev_id = listing['item']['id']
         return sorted_list
 
-    '''
-    Parses prices from data and appends to a list. The relevant item id,
-    quantity, and price list are all added to the passed queue as a tuple.
-    Following a multiprocessing producer consumer design, this function
-    acts as the producer. An event is set when all listings are processed.
-    If push to queue fails, will attempt to push again.
-
-    @params data        Auction house listing data
-    @params q           Queue for which item data should be pushed to
-    @params event       Event to be set when all listings in data are
-                        processed
-
-    @throws queue.Full  Thrown if queue is full
-    '''
     def create_price_list(self, data, q, event):
+        '''
+        Parses prices from data and appends to a list. The relevant item id,
+        quantity, and price list are all added to the passed queue as a tuple.
+        Following a multiprocessing producer consumer design, this function
+        acts as the producer. An event is set when all listings are processed.
+        If push to queue fails, will attempt to push again.
+
+        @params data        Auction house listing data
+        @params q           Queue for which item data should be pushed to
+        @params event       Event to be set when all listings in data are
+                            processed
+
+        @throws queue.Full  Thrown if queue is full
+        '''
         price_list = list()
         prev_id = 0
         quantity = 0
@@ -274,20 +272,20 @@ class WowDB:
                             break
         event.set()
 
-    '''
-    Calculates the average price and standard deviation of an item.
-    Following a multiprocessing producer consumer design, this function
-    acts as the consumer, popping items from the queue and calculating.
-
-    @params q                                   Queue from which data is
-                                                popped
-    
-    @throws queue.Empty                         Thrown if queue is empty
-
-    @return (item[0], item[1], foo.meanfull)    Tuple containing processed
-                                                item data
-    '''
     def analyze_data(self, q):
+        '''
+        Calculates the average price and standard deviation of an item.
+        Following a multiprocessing producer consumer design, this function
+        acts as the consumer, popping items from the queue and calculating.
+
+        @params q                                   Queue from which data is
+                                                    popped
+        
+        @throws queue.Empty                         Thrown if queue is empty
+
+        @return (item[0], item[1], foo.meanfull)    Tuple containing processed
+                                                    item data
+        '''
         try:
             item = q.get_nowait()
             foo = Welford()
@@ -305,6 +303,14 @@ class WowDB:
             pass
 
     def prod_cons_pool(self, data):
+        '''
+        Creates the producer and consumer pool to asynchronously
+        process data
+
+        @params data    data to be processed
+
+        @return l       list of processed data
+        '''
         manager = Manager()
         q = manager.Queue()
         l = list()
@@ -321,98 +327,98 @@ class WowDB:
         p.join()
         return l
 
-    '''
-    Gets property locale.
-
-    @return locale
-    '''
     @property
     def locale(self):
+        '''
+        Gets property locale.
+
+        @return locale
+        '''
         return self._locale
     
-    '''
-    Sets property locale.
-    '''
     @locale.setter
     def locale(self, value):
+        '''
+        Sets property locale.
+        '''
         self._locale = value
 
-    '''
-    Gets property region.
-
-    @return region
-    '''
     @property
     def region(self):
+        '''
+        Gets property region.
+
+        @return region
+        '''
         return self._region
 
-    '''
-    Sets property region.
-    '''
     @region.setter
     def region(self, value):
+        '''
+        Sets property region.
+        '''
         self._region = value
 
-    '''
-    Gets property realm.
-
-    @return realm
-    '''
     @property
     def realm(self):
+        '''
+        Gets property realm.
+
+        @return realm
+        '''
         return self._realm
 
-    '''
-    Sets property realm.
-    '''
     @realm.setter
     def realm(self, value):
+        '''
+        Sets property realm.
+        '''
         self._realm = value
 
-    '''
-    Gets property realm ID.
-
-    @return realm_id
-    '''
     @property
     def realm_id(self):
+        '''
+        Gets property realm ID.
+
+        @return realm_id
+        '''
         return self._realm_id
 
-    '''
-    Sets property realm ID
-    '''
     @realm_id.setter
     def realm_id(self, value):
+        '''
+        Sets property realm ID
+        '''
         self._realm_id = value
 
-    '''
-    Gets property realm slug.
-
-    @return realm_slug
-    '''
     @property
     def realm_slug(self):
+        '''
+        Gets property realm slug.
+
+        @return realm_slug
+        '''
         return self._realm_slug
 
-    '''
-    Sets property realm slug
-    '''
     @realm_slug.setter
     def realm_slug(self, value):
+        '''
+        Sets property realm slug
+        '''
         self._realm_slug = value
 
-    '''
-    Gets property connected realm ID
-
-    @return connected_realm_id
-    '''
     @property
     def connected_realm_id(self):
+        '''
+        Gets property connected realm ID
+
+        @return connected_realm_id
+        '''
         return self._connected_realm_id
 
-    '''
-    Sets property connected realm ID
-    '''
     @connected_realm_id.setter
     def connected_realm_id(self, value):
+        '''
+        Sets property connected realm ID
+        '''
         self._connected_realm_id = value
