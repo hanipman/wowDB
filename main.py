@@ -1,9 +1,14 @@
+#!/usr/bin/env python3.8
+
 from wowDB import WowDB
 from dbConnect import *
 # import pprint as pprint
 import time
+import logging
 
 def main():
+    logging.basicConfig(filename='info.log', format='%(asctime)s - %(levelname)'
+        's: %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:00')
     start_time = time.time()
     try:
         bnetcred = config('settings.ini', 'bnetcred')
@@ -25,10 +30,11 @@ def main():
         dbcon.checkTableExists(wow.realm_slug)
         for i in l:
             dbcon.addItem(i)
-
-        print("--- %s seconds ---" % (time.time() - start_time))
     except Exception as e:
         print(str(e))
+        logging.error(str(e) + '\n')
+    else:
+        logging.info('Execution time %s seconds\n' % (time.time() - start_time))
 
 if __name__ == "__main__":
     main()
