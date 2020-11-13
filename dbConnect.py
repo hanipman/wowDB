@@ -1,6 +1,10 @@
 import psycopg2
 from psycopg2 import sql
 from configparser import ConfigParser
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 def config(filename = 'settings.ini', section='wowdb'):
     '''
@@ -12,6 +16,8 @@ def config(filename = 'settings.ini', section='wowdb'):
     @param Section in file to store
 
     @return db Dictionary containing parsed database info
+
+    @throws Exception thrown if specific section is not found in config file
     '''
     parser = ConfigParser()
     parser.read(filename)
@@ -22,7 +28,9 @@ def config(filename = 'settings.ini', section='wowdb'):
         for param in params:
             db[param[0]] = param[1]
     else:
-        raise Exception('Section {0} not found in the {1} file'.format(section, filename))
+        msg = 'Section {0} not found in the {1} file'.format(section, filename)
+        logging.exception(msg)
+        raise Exception(msg)
     return db
 
 class dbConnect():
@@ -39,13 +47,13 @@ class dbConnect():
         '''
         Connect to database using details within settings.ini
         
-        @throws DatabaseError Thrown if connection fails
+        @throws Error Thrown if connection fails
         @throws Exception Thrown when any other exception is caught
         '''
         try:
             self.conn = psycopg2.connect(host=host, dbname=database, user=user, password=password)
-        except (Exception, psycopg2.DatabaseError) as e:
-            print(e.args)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
             raise e
 
     def checkTableExists(self, realm_slug):
@@ -56,15 +64,15 @@ class dbConnect():
         
         @param realm_slug Name of table to look for
         
-        @throws DatabaseError Thrown if error in statement
+        @throws Error Thrown if error any of the database calls
         @throws Exception Thrown when any other exception is caught
         '''
         try:
             self.realm = realm_slug.replace('-','_')
             cur = self.conn.cursor()
-            cur.execute(
+            cur.execute(sql.SQL(
                 """
-                CREATE TABLE IF NOT EXISTS %s (
+                CREATE TABLE IF NOT EXISTS {} (
                     interval TIMESTAMP NOT NULL,
                     item_id INTEGER NOT NULL,
                     quantity INTEGER NOT NULL,
@@ -72,18 +80,18 @@ class dbConnect():
                     std_dev BIGINT NOT NULL,
                     high_price BIGINT NOT NULL,
                     low_price BIGINT NOT NULL
-                )
+                );
                 CREATE TABLE IF NOT EXISTS item_list (
                     item_id INTEGER NOT NULL,
                     item_name TEXT NOT NULL,
                     item_pic BYTEA NOT NULL
                 )
-                """ % self.realm
+                """).format(sql.Identifier(self.realm)),[]
             )
             self.conn.commit()
             cur.close()
-        except (Exception, psycopg2.DatabaseError) as e:
-            print(e.args)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
             raise e
     
     def addItem(self, item):
@@ -92,7 +100,7 @@ class dbConnect():
 
         @param item Item of type dictionary to add to table
         
-        @throws DatabaseError Thrown if error in statement
+        @throws Error Thrown if error in any of the database calls
         @throws Exception Thrown when any other exception is caught
         '''
         try:
@@ -112,18 +120,81 @@ class dbConnect():
                             %s,
                             %s,
                             %s,
-                            %s)
+                            %s
+                    )
                 """).format(sql.Identifier(self.realm)), [
-                        item['item_id'],
-                        item['quantity'],
-                        item['avg_unit_price'],
-                        item['std_dev'],
-                        item['high_price'],
-                        item['low_price']
-                    ]
+                    item['item_id'],
+                    item['quantity'],
+                    item['avg_unit_price'],
+                    item['std_dev'],
+                    item['high_price'],
+                    item['low_price']
+                ]
             )
             self.conn.commit()
             cur.close()
-        except (Exception, psycopg2.DatabaseError) as e:
-            print(e.args)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def checkItemExists(self, item_id):
+        '''
+        Checks if the item already exists in the table item_list.
+
+        @param item_id ID of item to be checked
+
+        @return true/false
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught
+        '''
+        try:
+            cur = self.conn.cursor()
+            cur.execute(
+                """
+                SELECT EXISTS (
+                    SELECT *
+                    FROM item_list
+                    WHERE item_id = %s
+                )
+                """,
+                (item_id,)
+            )
+            res = cur.fetchone()[0]
+            cur.close()
+            return res
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def storeItemDetails(self, item_id, item_name, item_pic):
+        '''
+        Stores item details into table item_list.
+
+        @param item_id ID of the item
+        @param item_name name of the item
+        @param item_pic byte array of the item pic
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught        '''
+        try:
+            cur = self.conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO item_list
+                    (item_id, item_name, item_pic)
+                SELECT %s, %s, %s
+                WHERE
+                    NOT EXISTS (
+                        SELECT item_id
+                        FROM item_list
+                        WHERE item_id = %s
+                    )
+                """,
+                (item_id, item_name, item_pic, item_id)
+            )
+            self.conn.commit()
+            cur.close()
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
             raise e
