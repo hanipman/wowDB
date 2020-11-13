@@ -1,4 +1,3 @@
-
 from wowapi import WowApi
 from wowapi.exceptions import *
 import copy
@@ -7,6 +6,7 @@ from multiprocessing import Event, Manager, Pool, Process, Queue
 import queue as queue
 import re
 from welford import Welford
+import urllib.request
 
 class WowDB:
     '''
@@ -108,6 +108,46 @@ class WowDB:
             data = data['connected_realm']['href']
             data = re.search(r'\d+', data).group()
             self.connected_realm_id = int(data)
+        except (Exception, WowApiException) as e:
+            print(e.args)
+            raise e
+
+    def findItemName(self, item_id):
+        '''
+        Finds the item name of the given item id.
+
+        @param item_id ID of item
+        
+        @return item name
+
+        @throws WowApiException Thrown if query returns 400
+        @throws Exception       Thrown when any other exception is caught
+        '''
+        data = None
+        try:
+            data = self.api.get_item_data(region=self.region, id=item_id, namespace='static-us', locale=self.locale)
+            return data['name']
+        except (Exception, WowApiException) as e:
+            print(e.args)
+            raise e
+    
+    def findItemPic(self, item_id):
+        '''
+        Finds the item picture as a byte array of the given item id
+
+        @param item_id ID of item
+
+        @return byte array
+
+        @throws WowApiException Thrown if query returns 400
+        @throws Exception       Thrown when any other exception is caught
+        '''
+        data = None
+        try:
+            data = self.api.get_item_media(region=self.region, id=item_id, namespace='static-us', locale=self.locale)
+            url = data['assets'][0]['value']
+            res = urllib.request.urlopen(url)
+            return res.read()
         except (Exception, WowApiException) as e:
             print(e.args)
             raise e
