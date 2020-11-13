@@ -177,6 +177,7 @@ class WowDB:
             print(e.args)
             raise e
 
+    """
     def sortListings(self, data):
         '''
         Parses relevant data from auction house listing data and calculates
@@ -260,6 +261,7 @@ class WowDB:
             # update previous listing id
             prev_id = listing['item']['id']
         return sorted_list
+    """
 
     def create_price_list(self, data, q, event):
         '''
