@@ -2,6 +2,8 @@ import pytest
 from wowDB import WowDB
 from wowapi.exceptions import *
 from dbConnect import config
+from PIL import Image, ImageChops
+import io
 
 locale = 'en_US'
 region = 'us'
@@ -52,6 +54,45 @@ class TestwowDB():
         '''Test init constructor for missing locale, region or realm.'''
         with expected:
             assert WowDB(locale, region, realm, client_id, client_secret) is not None
+
+    def test_findItemName(self):
+        wow = WowDB(locale, region, realm, client_id, client_secret)
+        item_name = wow.findItemName(19019)
+        assert item_name == 'Thunderfury, Blessed Blade of the Windseeker'
+
+    @pytest.mark.parametrize(
+        "item_id,expected",
+        [
+            (10000000,pytest.raises(WowApiException)),
+            ('blah',pytest.raises(WowApiException))
+        ])
+    def test_bad_findItemName(self, item_id, expected):
+        '''Test getting the item name corresponding to a given item ID'''
+        wow = WowDB(locale, region, realm, client_id, client_secret)
+        with expected:
+            assert wow.findItemName(item_id) is not None
+
+    def test_findItemPic(self):
+        wow = WowDB(locale, region, realm, client_id, client_secret)
+        ba = wow.findItemPic(19019)
+        # with open('picture.jpg', 'rb') as im:
+        #     b = bytearray(im.read())
+        image1 = Image.open(io.BytesIO(ba))
+        image2 = Image.open('test_picture.jpg')
+        diff = ImageChops.difference(image1, image2)
+        assert not diff.getbbox()
+
+    @pytest.mark.parametrize(
+        "item_id,expected",
+        [
+            (10000000,pytest.raises(WowApiException)),
+            ('blah',pytest.raises(WowApiException))
+        ])
+    def test_bad_findItemPic(self, item_id, expected):
+        '''Test getting the item name corresponding to a given item ID'''
+        wow = WowDB(locale, region, realm, client_id, client_secret)
+        with expected:
+            assert wow.findItemPic(item_id) is not None
 
     def test_findAuctions(self):
         '''Test getting auction house results'''
