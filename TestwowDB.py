@@ -14,10 +14,6 @@ client_secret = bnetcred['client_secret']
 
 class TestwowDB():
 
-    bnetcred = config('settings.ini', 'bnetcred')
-    client_id = bnetcred['client_id']
-    client_secret = bnetcred['client_secret']
-
     def test_init(self):
         '''Test init constructor with existing inputs'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
