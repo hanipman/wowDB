@@ -176,7 +176,8 @@ class dbConnect():
         @param item_pic byte array of the item pic
 
         @throws Error Thrown if error in any database calls
-        @throws Exception Thrown when any other exception is caught        '''
+        @throws Exception Thrown when any other exception is caught
+        '''
         try:
             cur = self.conn.cursor()
             cur.execute(
