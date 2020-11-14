@@ -52,6 +52,7 @@ class TestwowDB():
             assert WowDB(locale, region, realm, client_id, client_secret) is not None
 
     def test_findItemName(self):
+        '''Test getting the item name corresponding to a given item ID'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         item_name = wow.findItemName(19019)
         assert item_name == 'Thunderfury, Blessed Blade of the Windseeker'
@@ -63,16 +64,15 @@ class TestwowDB():
             ('blah',pytest.raises(WowApiException))
         ])
     def test_bad_findItemName(self, item_id, expected):
-        '''Test getting the item name corresponding to a given item ID'''
+        '''Test getting the item name with an invalid item ID'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         with expected:
             assert wow.findItemName(item_id) is not None
 
     def test_findItemPic(self):
+        '''Test getting the item pic corresponding to a give item ID'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         ba = wow.findItemPic(19019)
-        # with open('picture.jpg', 'rb') as im:
-        #     b = bytearray(im.read())
         image1 = Image.open(io.BytesIO(ba))
         image2 = Image.open('test_picture.jpg')
         diff = ImageChops.difference(image1, image2)
@@ -85,7 +85,7 @@ class TestwowDB():
             ('blah',pytest.raises(WowApiException))
         ])
     def test_bad_findItemPic(self, item_id, expected):
-        '''Test getting the item name corresponding to a given item ID'''
+        '''Test getting the item pic with an invalid item ID'''
         wow = WowDB(locale, region, realm, client_id, client_secret)
         with expected:
             assert wow.findItemPic(item_id) is not None
