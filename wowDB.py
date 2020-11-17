@@ -288,7 +288,7 @@ class WowDB:
         prev_id = 0
         quantity = 0
         for listing in data:
-            logging.debug("Creating price list for item id %s" % listing['item']['id'])
+            # logging.debug("Creating price list for item id %s" % listing['item']['id'])
             price = 0
             if 'unit_price' in listing.keys():
                 price = listing['unit_price']
@@ -335,7 +335,7 @@ class WowDB:
         '''
         try:
             item = q.get_nowait()
-            logging.debug("Analyzing item id %s" % item[0])
+            # logging.debug("Analyzing item id %s" % item[0])
             foo = Welford()
             foo(item[2])
             item_dict = {
