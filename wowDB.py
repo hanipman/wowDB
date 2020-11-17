@@ -7,6 +7,10 @@ import queue as queue
 import re
 from welford import Welford
 import urllib.request
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 class WowDB:
     '''
@@ -33,7 +37,7 @@ class WowDB:
             try:
                 self.api = WowApi(client_id, client_secret)
             except (Exception, WowApiOauthException) as e:
-                print(e.args)
+                logging.exception(str(e))
                 raise e
         else:
             raise ValueError('client_id or client_secret empty.')
@@ -52,7 +56,7 @@ class WowDB:
         try:
             self.__findConnectedRealm()
         except (Exception, WowApiOauthException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
 
     def __findRealmID(self):
@@ -69,7 +73,7 @@ class WowDB:
                 if x['name'] == self.realm:
                     self.realm_id = x['id']
         except (Exception, WowApiException) as e:
-            print(e.arts)
+            logging.exception(str(e))
             raise e
     
     def __findRealmSlug(self):
@@ -86,7 +90,7 @@ class WowDB:
                 if x['name'] == self.realm:
                     self.realm_slug = x['slug']
         except (Exception, WowApiException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
 
     def __findConnectedRealm(self, realm_slug=None):
@@ -109,12 +113,13 @@ class WowDB:
             data = re.search(r'\d+', data).group()
             self.connected_realm_id = int(data)
         except (Exception, WowApiException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
 
     def findItemName(self, item_id):
         '''
-        Finds the item name of the given item id.
+        Finds the item name of the given item id. If an exception is thrown, the
+        item is not in the WoW database.
 
         @param item_id ID of item
         
@@ -128,18 +133,19 @@ class WowDB:
             data = self.api.get_item_data(region=self.region, id=item_id, namespace='static-us', locale=self.locale)
             return data['name']
         except (Exception, WowApiException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
     
     def findItemPic(self, item_id):
         '''
-        Finds the item picture as a byte array of the given item id
+        Finds the item picture as a byte array of the given item id. If an
+        exception is thrown, the item is not in the WoW database.
 
         @param item_id ID of item
 
         @return byte array
 
-        @throws WowApiException Thrown if query returns 400
+        @throws WowApiException Thrown if query returns 404
         @throws Exception       Thrown when any other exception is caught
         '''
         data = None
@@ -149,7 +155,7 @@ class WowDB:
             res = urllib.request.urlopen(url)
             return res.read()
         except (Exception, WowApiException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
 
     def findAuctions(self, connected_realm_id=None):
@@ -174,7 +180,7 @@ class WowDB:
             data = data['auctions']
             return data
         except (Exception, WowApiException) as e:
-            print(e.args)
+            logging.exception(str(e))
             raise e
 
     """
@@ -276,12 +282,13 @@ class WowDB:
         @params event       Event to be set when all listings in data are
                             processed
 
-        @throws queue.Full  Thrown if queue is full
+        @throws queue.Full  T[hrown if queue is full
         '''
         price_list = list()
         prev_id = 0
         quantity = 0
         for listing in data:
+            logging.debug("Creating price list for item id %s" % listing['item']['id'])
             price = 0
             if 'unit_price' in listing.keys():
                 price = listing['unit_price']
@@ -320,16 +327,15 @@ class WowDB:
         Following a multiprocessing producer consumer design, this function
         acts as the consumer, popping items from the queue and calculating.
 
-        @params q                                   Queue from which data is
-                                                    popped
+        @params q           Queue from which data is popped
         
-        @throws queue.Empty                         Thrown if queue is empty
+        @throws queue.Empty Thrown if queue is empty
 
-        @return (item[0], item[1], foo.meanfull)    Tuple containing processed
-                                                    item data
+        @return item_dict   item data
         '''
         try:
             item = q.get_nowait()
+            logging.debug("Analyzing item id %s" % item[0])
             foo = Welford()
             foo(item[2])
             item_dict = {
@@ -353,6 +359,7 @@ class WowDB:
 
         @return l       list of processed data
         '''
+        logging.debug("Starting process pool...")
         manager = Manager()
         q = manager.Queue()
         l = list()
@@ -368,13 +375,6 @@ class WowDB:
                     break
         p.join()
         return l
-
-    def storeItemPics(self, item):
-        '''
-        Checks if item picture is already stored in database. If not, download
-        the picture and store.
-        '''
-        return True
 
     @property
     def locale(self):
