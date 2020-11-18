@@ -327,6 +327,13 @@ class WowDB:
         p.join()
         return l
 
+    def storeItemPics(self, item):
+        '''
+        Checks if item picture is already stored in database. If not, download
+        the picture and store.
+        '''
+        return True
+
     @property
     def locale(self):
         '''
