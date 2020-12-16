@@ -113,6 +113,8 @@ def main():
         # Add analyzed data to database
         dbcon.checkTableExists(wow.realm_slug)
         addUpdatedListings(dbcon, l)
+        logging.info('Analysis length: %d', len(l))
+        logging.info('Filtered list length: %d', len(filtered_list))
     except Exception as e:
         print(str(e))
         logging.error(str(e) + '\n')
