@@ -177,6 +177,14 @@ class dbConnect():
 
     def getIDDiff(self, id_list):
         '''
+        Gets a list of item IDs that do no appear in the table item_list.
+
+        @param id_list list of IDs
+
+        @return res List of IDs that are not present
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught
         '''
         try:
             local_conn = self.conn_pool.getconn()
@@ -187,7 +195,6 @@ class dbConnect():
             res = [r[0] for r in cur.fetchall()]
             cur.close()
             self.conn_pool.putconn(local_conn)
-            # logging.debug(res)
             return res
         except (Exception, psycopg2.Error) as e:
             logging.exception(str(e))
@@ -195,6 +202,12 @@ class dbConnect():
 
     def storeSnapshot(self, formatted_list):
         '''
+        Stores the filtered auction house snapshot in the (realm)_snapshot table.
+
+        @param formatted_list List containing filtered listings.
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught
         '''
         try:
             local_conn = self.conn_pool.getconn()
@@ -212,6 +225,10 @@ class dbConnect():
 
     def clearSnapshot(self):
         '''
+        Clears the (realm)_snapshot table.
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught
         '''
         try:
             local_conn = self.conn_pool.getconn()
@@ -230,26 +247,12 @@ class dbConnect():
             logging.exception(str(e))
             raise e
 
-    def addUpdatedListings(self, analyzed_list):
-        '''
-        '''
-        try:
-            local_conn = self.conn_pool.getconn()
-            if local_conn:
-                cur = local_conn.cursor()
-                columns = analyzed_list[0].keys()
-                query = "INSERT INTO {} ({}) VALUES %s".format(self.realm, ','.join(columns))
-                values = [[value for value in item.values()] for item in analyzed_list]
-                execute_values(cur, query, values)
-                local_conn.commit()
-                cur.close()
-                self.conn_pool.putconn(local_conn)
-        except (Exception, psycopg2.Error) as e:
-            logging.exception(str(e))
-            raise e
-
     def insertNewListings(self):
         '''
+        Uses query statement to determine analyze snapshot and insert into table (realm)
+
+        @throws Error Thrown if error in any database calls
+        @throws Exception Thrown when any other exception is caught
         '''
         try:
             local_conn = self.conn_pool.getconn()

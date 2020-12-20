@@ -60,6 +60,14 @@ def filterInvalidListings(wow, dbcon, ids):
             raise e
 
 def findPrice(listing):
+    '''
+    Finds the unit price of the listing.
+
+    @param listing Listing of an item
+    
+    @return unit_price of item
+    @return None returned if listing does not contain valid price
+    '''
     if 'unit_price' in listing:
         return listing['unit_price']
     elif 'buyout' in listing:
