@@ -104,52 +104,6 @@ class dbConnect():
         except (Exception, psycopg2.Error) as e:
             logging.exception(str(e))
             raise e
-    
-    def addItem(self, item):
-        '''
-        Adds analyzed item to realm table.
-
-        @param item Item of type dictionary to add to table
-        
-        @throws Error Thrown if error in any of the database calls
-        @throws Exception Thrown when any other exception is caught
-        '''
-        try:
-            local_conn = self.conn_pool.getconn()
-            if local_conn:
-                cur = local_conn.cursor()
-                cur.execute(sql.SQL(
-                    """
-                    INSERT INTO {} (interval,
-                                    item_id,
-                                    quantity,
-                                    avg_unit_price,
-                                    std_dev,
-                                    high_price,
-                                    low_price)
-                        VALUES (current_timestamp,
-                                %s,
-                                %s,
-                                %s,
-                                %s,
-                                %s,
-                                %s
-                        )
-                    """).format(sql.Identifier(self.realm)), [
-                        item['item_id'],
-                        item['quantity'],
-                        item['avg_unit_price'],
-                        item['std_dev'],
-                        item['high_price'],
-                        item['low_price']
-                    ]
-                )
-                local_conn.commit()
-                cur.close()
-                self.conn_pool.putconn(local_conn)
-        except (Exception, psycopg2.Error) as e:
-            logging.exception(str(e))
-            raise e
 
     def checkItemExists(self, item_id):
         '''

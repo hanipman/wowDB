@@ -8,13 +8,6 @@ import logging
 
 import concurrent.futures as concurrent
 
-# I want to filter the results and download names and pics at the same time
-# 1. Check if item is in database using checkItemExists
-# 2a. If true, skip and append listing to filtered list
-# 2b. If false, attempt to download item name and item pic
-# 3a. If exception thrown, item is invalid, so skip and do not append
-# 3b. If exception is not thrown, item is found, add to database and append to list
-
 wow = None
 
 def reqItemDet(wow, dbcon, item_id):
@@ -66,23 +59,6 @@ def filterInvalidListings(wow, dbcon, ids):
             logging.exception(str(e))
             raise e
 
-def addUpdatedListings(dbcon, filtered_list):
-    '''
-    Creates a threadpool whose threads add items to the database
-
-    @param dbcon postgresql connection wrapper class
-    @param filtered_list List of items to be added
-
-    @thrown Exception Thrown when any exception is caught
-    '''
-    with concurrent.ThreadPoolExecutor(max_workers=100) as executor:
-        logging.debug("Adding items to database...")
-        try:
-            executor.map(dbcon.addItem, filtered_list)
-        except Exception as e:
-            logging.warning(str(e))
-            pass
-
 def findPrice(listing):
     if 'unit_price' in listing:
         return listing['unit_price']
@@ -111,9 +87,6 @@ def main():
 
         # Get list of ids that do not already exist in item_list table
         check_list = dbcon.getIDDiff(ids)
-        # pprint.pprint(check_list)
-        # Get list of ids of items that are actually invalid
-        # Filter data of invalid ids
 
         # Remove listings with invalid item IDs
         results = filterInvalidListings(wow, dbcon, check_list)
@@ -122,19 +95,12 @@ def main():
 
         formatted_list = list()
         [formatted_list.append({'item_id': x['item']['id'], 'price': findPrice(x), 'quantity': x['quantity']}) for x in filtered_list if ('unit_price' in x or 'buyout' in x)]
-        # pprint.pprint(formatted_list)
         dbcon.checkTableExists(wow.realm_slug)
         dbcon.clearSnapshot()
         dbcon.storeSnapshot(formatted_list)
 
-        # # Analyze data
-        # l = wow.prod_cons_pool(filtered_list)
-
-        # # Add analyzed data to database
-        # dbcon.checkTableExists(wow.realm_slug)
-        # dbcon.addUpdatedListings(l)
+        # Add analyzed data to database
         dbcon.insertNewListings()
-        # logging.info('Analysis length: %d', len(l))
         logging.info('Filtered list length: %d', len(formatted_list))
     except Exception as e:
         print(str(e))
