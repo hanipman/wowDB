@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2 import pool,sql
+from psycopg2.extras import execute_values
 from configparser import ConfigParser
 import logging
 
@@ -76,7 +77,7 @@ class dbConnect():
                 cur.execute(sql.SQL(
                     """
                     CREATE TABLE IF NOT EXISTS {} (
-                        interval TIMESTAMP NOT NULL,
+                        interval TIMESTAMP NOT NULL DEFAULT DATE_TRUNC('hour', NOW()),
                         item_id INTEGER NOT NULL,
                         quantity INTEGER NOT NULL,
                         avg_unit_price BIGINT NOT NULL,
@@ -88,8 +89,13 @@ class dbConnect():
                         item_id INTEGER NOT NULL,
                         item_name TEXT NOT NULL,
                         item_pic BYTEA NOT NULL
-                    )
-                    """).format(sql.Identifier(self.realm)),[]
+                    );
+                    CREATE TABLE IF NOT EXISTS {} (
+                        item_id INTEGER NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        price BIGINT NOT NULL
+                    );
+                    """).format(sql.Identifier(self.realm), sql.Identifier(self.realm + '_snapshot')),[]
                 )
                 local_conn.commit()
                 cur.close()
@@ -211,6 +217,101 @@ class dbConnect():
                 cur.close()
                 self.conn_pool.putconn(local_conn)
                 logging.debug("Storing item %s name and picture in table item_list" % item_id)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def getIDDiff(self, id_list):
+        '''
+        '''
+        try:
+            local_conn = self.conn_pool.getconn()
+            cur = local_conn.cursor()
+            temp = [("(" + str(x) + ")") for x in id_list]
+            temp_str = ','.join(i for i in temp)
+            cur.execute("SELECT id FROM (VALUES %s) V(id) EXCEPT SELECT item_id FROM item_list ORDER BY id" % temp_str)
+            res = [r[0] for r in cur.fetchall()]
+            cur.close()
+            self.conn_pool.putconn(local_conn)
+            # logging.debug(res)
+            return res
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def storeSnapshot(self, formatted_list):
+        '''
+        '''
+        try:
+            local_conn = self.conn_pool.getconn()
+            cur = local_conn.cursor()
+            columns = formatted_list[0].keys()
+            query = "INSERT INTO {} ({}) VALUES %s".format(self.realm + '_snapshot', ','.join(columns))
+            values = [[value for value in item.values()] for item in formatted_list]
+            execute_values(cur, query, values)
+            local_conn.commit()
+            cur.close()
+            self.conn_pool.putconn(local_conn)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def clearSnapshot(self):
+        '''
+        '''
+        try:
+            local_conn = self.conn_pool.getconn()
+            if local_conn:
+                cur = local_conn.cursor()
+                cur.execute(sql.SQL(
+                    """
+                    TRUNCATE {}
+                    """).format(sql.Identifier(self.realm + '_snapshot')), []
+                )
+                local_conn.commit()
+                cur.close()
+                self.conn_pool.putconn(local_conn)
+                logging.debug("Clearing snap shot for %s" % self.realm)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def addUpdatedListings(self, analyzed_list):
+        '''
+        '''
+        try:
+            local_conn = self.conn_pool.getconn()
+            if local_conn:
+                cur = local_conn.cursor()
+                columns = analyzed_list[0].keys()
+                query = "INSERT INTO {} ({}) VALUES %s".format(self.realm, ','.join(columns))
+                values = [[value for value in item.values()] for item in analyzed_list]
+                execute_values(cur, query, values)
+                local_conn.commit()
+                cur.close()
+                self.conn_pool.putconn(local_conn)
+        except (Exception, psycopg2.Error) as e:
+            logging.exception(str(e))
+            raise e
+
+    def insertNewListings(self):
+        '''
+        '''
+        try:
+            local_conn = self.conn_pool.getconn()
+            if local_conn:
+                cur = local_conn.cursor()
+                cur.execute(sql.SQL(
+                    """
+                    INSERT INTO {} (item_id, quantity, avg_unit_price, std_dev, high_price, low_price)
+                        SELECT item_id, SUM(quantity), FLOOR(AVG(price)), FLOOR(STDDEV_POP(price)), MAX(price), MIN(price)
+                        FROM {} GROUP BY item_id ORDER BY item_id
+                    """).format(sql.Identifier(self.realm), sql.Identifier(self.realm + '_snapshot')),[]
+                )
+                local_conn.commit()
+                cur.close()
+                self.conn_pool.putconn(local_conn)
+                logging.debug("Inserting analyzed data to table %s" % self.realm)
         except (Exception, psycopg2.Error) as e:
             logging.exception(str(e))
             raise e

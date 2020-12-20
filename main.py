@@ -83,6 +83,13 @@ def addUpdatedListings(dbcon, filtered_list):
             logging.warning(str(e))
             pass
 
+def findPrice(listing):
+    if 'unit_price' in listing:
+        return listing['unit_price']
+    elif 'buyout' in listing:
+        return listing['buyout']/listing['quantity']
+    return
+
 def main():
     logging.basicConfig(filename='info.log', format='%(asctime)s - %(levelname)'
         's: %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
@@ -102,19 +109,33 @@ def main():
         ids = list()
         [ids.append(x['item']['id']) for x in data if x['item']['id'] not in ids]
 
+        # Get list of ids that do not already exist in item_list table
+        check_list = dbcon.getIDDiff(ids)
+        # pprint.pprint(check_list)
+        # Get list of ids of items that are actually invalid
+        # Filter data of invalid ids
+
         # Remove listings with invalid item IDs
-        results = filterInvalidListings(wow, dbcon, ids)
+        results = filterInvalidListings(wow, dbcon, check_list)
         invalid_ids = [future.result() for future in concurrent.as_completed(results) if future.result()]
         filtered_list = [listing for listing in data if listing['item']['id'] not in invalid_ids]
 
-        # Analyze data
-        l = wow.prod_cons_pool(filtered_list)
-
-        # Add analyzed data to database
+        formatted_list = list()
+        [formatted_list.append({'item_id': x['item']['id'], 'price': findPrice(x), 'quantity': x['quantity']}) for x in filtered_list if ('unit_price' in x or 'buyout' in x)]
+        # pprint.pprint(formatted_list)
         dbcon.checkTableExists(wow.realm_slug)
-        addUpdatedListings(dbcon, l)
-        logging.info('Analysis length: %d', len(l))
-        logging.info('Filtered list length: %d', len(filtered_list))
+        dbcon.clearSnapshot()
+        dbcon.storeSnapshot(formatted_list)
+
+        # # Analyze data
+        # l = wow.prod_cons_pool(filtered_list)
+
+        # # Add analyzed data to database
+        # dbcon.checkTableExists(wow.realm_slug)
+        # dbcon.addUpdatedListings(l)
+        dbcon.insertNewListings()
+        # logging.info('Analysis length: %d', len(l))
+        logging.info('Filtered list length: %d', len(formatted_list))
     except Exception as e:
         print(str(e))
         logging.error(str(e) + '\n')
