@@ -13,11 +13,15 @@ Now applies multithreaded functionality. Instead of a single database connection
 v3.0:
 Moved all calculations to be done by the database. This removed the use of multiprocessing and cut down the execution time from ~10 minutes to ~35 seconds. Table creation now allows a default timestamp floored to the hour on insert of new records. Analysis is done using Postgres inbuilt functions SUM(), AVG(), STDDEV_POP(), LOW(), HIGH().
 
+v3.1:
+Add a crash report in the form of a dialog box. If the script fails for any reason, the error is printed to the log as well as shown in a persistent dialog box.
+
 ### Dependencies:
 ```
 python-wowapi
 psycopg2
 pytest
+PySimpleGUI
 ```
 
 ### Setup:

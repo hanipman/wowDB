@@ -2,6 +2,7 @@
 
 from wowDB import *
 from dbConnect import *
+from notification import notify
 import pprint as pprint
 import time
 import logging
@@ -111,7 +112,8 @@ def main():
         dbcon.insertNewListings()
         logging.info('Filtered list length: %d', len(formatted_list))
     except Exception as e:
-        print(str(e))
+        # print(str(e))
+        notify(str(e))
         logging.error(str(e) + '\n')
     else:
         logging.info('Execution time %s seconds\n' % (time.time() - start_time))
