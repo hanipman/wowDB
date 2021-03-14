@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.8
+#!/usr/bin/env python3.9
 
 from wowDB import *
 from dbConnect import *
@@ -6,6 +6,7 @@ from notification import notify
 import pprint as pprint
 import time
 import logging
+import schedule
 
 import concurrent.futures as concurrent
 
@@ -75,7 +76,7 @@ def findPrice(listing):
         return listing['buyout']/listing['quantity']
     return
 
-def main():
+def job():
     logging.basicConfig(filename='info.log', format='%(asctime)s - %(levelname)'
         's: %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
     start_time = time.time()
@@ -117,6 +118,12 @@ def main():
         logging.error(str(e) + '\n')
     else:
         logging.info('Execution time %s seconds\n' % (time.time() - start_time))
+
+def main():
+    schedule.every().hour.do(job).at(':00')
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
 
 if __name__ == "__main__":
     main()

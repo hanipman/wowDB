@@ -22,6 +22,7 @@ python-wowapi
 psycopg2
 pytest
 PySimpleGUI
+schedule
 ```
 
 ### Setup:
